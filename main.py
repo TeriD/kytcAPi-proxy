@@ -8,15 +8,11 @@ CORS(app, origins=["https://terid.github.io"])
 
 @app.route("/routeinfo")
 def routeinfo():
-    # Force float parsing to avoid string placeholders like "${lat}"
-    x = request.args.get("xcoord", type=float)
-    y = request.args.get("ycoord", type=float)
-
-    if x is None or y is None:
-        return jsonify({"error": "Missing or invalid xcoord or ycoord"}), 400
-
-    # ✅ These are real numbers now
-    print(f"📥 Proxy received: x={x}, y={y}")
+    try:
+        x = float(request.args.get("xcoord", ""))
+        y = float(request.args.get("ycoord", ""))
+    except ValueError:
+        return jsonify({"error": "Invalid coordinates: xcoord and ycoord must be numeric"}), 400
 
     url = "https://kytc-api-v100-lts-qrntk7e3ra-uc.a.run.app/api/route/GetRouteInfoByCoordinates"
     params = {
@@ -36,7 +32,7 @@ def routeinfo():
         return res.json()
     except requests.RequestException as e:
         print("❌ Proxy request failed:", e)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 502
 
 
 @app.route("/")
