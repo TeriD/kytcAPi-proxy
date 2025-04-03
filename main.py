@@ -5,12 +5,18 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app, origins=["https://terid.github.io"])
 
+
 @app.route("/routeinfo")
 def routeinfo():
-    x = request.args.get("xcoord")
-    y = request.args.get("ycoord")
-    if not x or not y:
-        return jsonify({"error": "Missing xcoord or ycoord"}), 400
+    # Force float parsing to avoid string placeholders like "${lat}"
+    x = request.args.get("xcoord", type=float)
+    y = request.args.get("ycoord", type=float)
+
+    if x is None or y is None:
+        return jsonify({"error": "Missing or invalid xcoord or ycoord"}), 400
+
+    # ✅ These are real numbers now
+    print(f"📥 Proxy received: x={x}, y={y}")
 
     url = "https://kytc-api-v100-lts-qrntk7e3ra-uc.a.run.app/api/route/GetRouteInfoByCoordinates"
     params = {
@@ -29,11 +35,14 @@ def routeinfo():
         res.raise_for_status()
         return res.json()
     except requests.RequestException as e:
+        print("❌ Proxy request failed:", e)
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/")
 def home():
     return "✅ KYTC RouteInfo proxy is running. Use /routeinfo with xcoord & ycoord."
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
